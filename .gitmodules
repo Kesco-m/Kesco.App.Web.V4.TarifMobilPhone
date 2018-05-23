@@ -1,0 +1,3 @@
+[submodule "Kesco.Lib.Log"]
+	path = Kesco.Lib.Log
+	url = C:/$GIT/Kesco.Lib.Log
