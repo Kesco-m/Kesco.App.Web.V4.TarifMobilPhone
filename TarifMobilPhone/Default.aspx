@@ -1,8 +1,9 @@
-ï»¿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Default.aspx.cs" Inherits="Kesco.App.Web.TarifMobilPhone.DefaultPage" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="Default.aspx.cs" Inherits="Kesco.App.Web.TarifMobilPhone.DefaultPage" %>
 <%@ Register TagPrefix="cs" Namespace="Kesco.Lib.Web.Controls.V4" Assembly="Controls.V4" %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
 <head runat="server">
+    
 
     <title><%=TM_Title%></title> 
     <script src='/Styles/sizzle.min.js' type='text/javascript'></script>
@@ -52,10 +53,10 @@
             </table>
         </td>
         <td rowspan="6" style="PADDING-LEFT:15px">
-                    <a href="javascript:void(0);" onclick="openRpt(0,'Ð—Ð°Ñ‚Ñ€Ð°Ñ‚Ñ‹ Ð¿Ð¾ Ñ‚ÐµÐ»ÐµÑ„Ð¾Ð½Ð°Ð¼');" class="btn"><img border=0 src="/styles/chart.gif"> <%=TM_Rpt1%></a><br>
-	                <a href="javascript:void(0);" onclick="openRpt(1,'Ð”Ð»Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚ÑŒ Ð¿Ð¾ Ñ‚ÐµÐ»ÐµÑ„Ð¾Ð½Ð°Ð¼');" class="btn"><img border=0 src="/styles/chart.gif"> <%=TM_Rpt2%></a> <br>
-	                <a href="javascript:void(0);" onclick="openRpt(2,'Ð—Ð°Ñ‚Ñ€Ð°Ñ‚Ñ‹ Ð¿Ð¾ ÑÐ¾Ñ‚Ñ€ÑƒÐ´Ð½Ð¸ÐºÐ°Ð¼');" class="btn"><img border=0 src="/styles/chart.gif"> <%=TM_Rpt3%></a> <br>
-	                <a href="javascript:void(0);" onclick="openRpt(3, 'Ð”Ð»Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾ÑÑ‚ÑŒ Ð¿Ð¾ ÑÐ¾Ñ‚Ñ€ÑƒÐ´Ð½Ð¸ÐºÐ°Ð¼');" class="btn"><img border=0 src="/styles/chart.gif"> <%=TM_Rpt4%></a> <br><br>
+                    <a href="javascript:void(0);" onclick="openRpt(0,'Çàòðàòû ïî òåëåôîíàì');" class="btn"><img border=0 src="/styles/chart.gif"> <%=TM_Rpt1%></a><br>
+	                <a href="javascript:void(0);" onclick="openRpt(1,'Äëèòåëüíîñòü ïî òåëåôîíàì');" class="btn"><img border=0 src="/styles/chart.gif"> <%=TM_Rpt2%></a> <br>
+	                <a href="javascript:void(0);" onclick="openRpt(2,'Çàòðàòû ïî ñîòðóäíèêàì');" class="btn"><img border=0 src="/styles/chart.gif"> <%=TM_Rpt3%></a> <br>
+	                <a href="javascript:void(0);" onclick="openRpt(3, 'Äëèòåëüíîñòü ïî ñîòðóäíèêàì');" class="btn"><img border=0 src="/styles/chart.gif"> <%=TM_Rpt4%></a> <br><br>
 	                <a href="javascript:void(0);" onclick="openDetailsBeeline();" class="btn" style="display:none"><img border=0 src="/styles/detail.gif"> <%=TM_Rpt5%></a> 
         </td>       
     </tr>
@@ -86,7 +87,7 @@
     <tr id=tr6>
         <td><%=TM_FPhone%>:</td>
         <td >
-             <cs:ComboBox runat=server ID="cbPhone" HtmlID="cbPhone" width="300px" TabIndex="5"></cs:ComboBox>
+             <cs:ComboBox runat=server ID="cbPhone" HtmlID="cbPhone" width="300px" TabIndex="5" EmptyValueText="- âñå òåëåôîíû -"></cs:ComboBox>
         </td>
     </tr>
  </table>
@@ -128,7 +129,7 @@
     }
 
 
-    function openDetailItem(pOpenMonth, pYear, pMonth, pDogovor, pDogovorT, pUser, pPhone, bln, pNDSAllSumm, pNDSStavka, pNDSIn, pScale, pColor, pTitle) {
+    function openDetailItem(pOpenMonth, pYear, pMonth, pDogovor, pDogovorT, pUser, pPhone, bln, pNDSAllSumm, pNDSStavka, pNDSIn, pScale, pColor, pTitle, pUserT) {
 
         var url = "details.aspx";
         url += "?OpenMonth=" + pOpenMonth;
@@ -137,6 +138,7 @@
         url += "&Dogovor=" + pDogovor;
         url += "&DogovorT=" + encodeURIComponent(pDogovorT);
         url += "&User=" + pUser;
+        url += "&UserT=" + encodeURIComponent(pUserT);
         url += "&Phone=" + pPhone;
         url += "&bln=" + bln;
 

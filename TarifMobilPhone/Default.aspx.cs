@@ -350,7 +350,7 @@ namespace Kesco.App.Web.TarifMobilPhone
             TM_FMonth = Resx.GetString("TM_FMonth");
 
             TM_FDogovor = Resx.GetString("TM_FDogovor");
-            TM_FEmployee = Resx.GetString("TM_FEmployee");
+            TM_FEmployee = Resx.GetString("lblUser");
             TM_FPhone = Resx.GetString("TM_FPhone");
             TM_ClearFilter = Resx.GetString("TM_ClearFilter");
             TM_FilterApply = Resx.GetString("TM_FilterApply");
@@ -718,8 +718,8 @@ namespace Kesco.App.Web.TarifMobilPhone
             cbEmployee.Items.Clear();
             cbEmployee.DataItems.Clear();
             cbEmployee.Value = "";
-            cbEmployee.KeyField = "КодСотрудника";
-            cbEmployee.ValueField = "Сотрудник";
+            cbEmployee.KeyField = "Ключ";
+            cbEmployee.ValueField = "Пользователь";
             Dictionary<string, object> sqlParams = GetSQLParams(2);
             DataTable dt = DBManager.GetData(SQL_Queries.SQL_СотрудникиПоКоторымБылаТарификация,
                                              Config.DS_accounting_phone, CommandType.Text, sqlParams);
@@ -727,11 +727,11 @@ namespace Kesco.App.Web.TarifMobilPhone
 
             if (V4IsPostBack)
             {
-                EnumerableRowCollection<DataRow> result = from r in dt.AsEnumerable()
+                var result = from r in dt.AsEnumerable()
                                                           where
                                                               oldVal.Length == 0 ||
                                                               (oldVal.Length > 0 &&
-                                                               r.Field<int>("КодСотрудника") == int.Parse(oldVal))
+                                                               r.Field<string>("Ключ") == oldVal)
                                                           select r;
 
                 DataView dv = result.AsDataView();
@@ -755,9 +755,10 @@ namespace Kesco.App.Web.TarifMobilPhone
         private void FillComboBoxPhone()
         {
             string oldVal = cbPhone.Value;
-            cbPhone.EmptyValueText = string.Format("- {0} -", TM_FDataEmptyPhone);
+            //cbPhone.EmptyValueText = string.Format("- {0} -", TM_FDataEmptyPhone);
             cbPhone.Items.Clear();
             cbPhone.DataItems.Clear();
+            //cbPhone.EmptyValueText = string.Format("- {0} -", TM_FDataEmptyPhone);
             cbPhone.Value = "";
             cbPhone.KeyField = "Абонент";
             cbPhone.ValueField = "Абонент";
@@ -893,7 +894,7 @@ namespace Kesco.App.Web.TarifMobilPhone
             int? year = null;
             int? month = null;
             int? dogovor = null;
-            int? employee = null;
+            string employee = "";
 
             int y;
  
@@ -911,7 +912,7 @@ namespace Kesco.App.Web.TarifMobilPhone
             if (inx != 1)
                 sqlParams.Add("@КодДоговора", cbDogovor.Value.Length == 0 ? dogovor : int.Parse(cbDogovor.Value));
             if (inx != 2)
-                sqlParams.Add("@КодСотрудника", cbEmployee.Value.Length == 0 ? employee : int.Parse(cbEmployee.Value));
+                sqlParams.Add("@Ключ", cbEmployee.Value.Length == 0 ? employee : cbEmployee.Value);
 
             if (inx != 3) sqlParams.Add("@Абонент", cbPhone.Value);
 
@@ -1224,15 +1225,13 @@ namespace Kesco.App.Web.TarifMobilPhone
                           group r by
                               new
                                   {
-                                      КодСотрудника = r.Field<int>("КодСотрудника"),
-                                      Сотрудник = r.Field<string>("Сотрудник")
+                                      Пользователь = r.Field<string>("Пользователь")
                                   }
                           into groupEmployee
-                          orderby groupEmployee.Key.Сотрудник
+                              orderby groupEmployee.Key.Пользователь
                           select new
                                      {
-                                         groupEmployee.Key.КодСотрудника,
-                                         groupEmployee.Key.Сотрудник,
+                                         groupEmployee.Key.Пользователь,
                                          Секунд = groupEmployee.Sum(r => r.Field<int>("Секунд")),
                                          Сумма = groupEmployee.Sum(r => r.Field<decimal>("Сумма")),
                                          СуммаСотрудника = groupEmployee.Sum(r => r.Field<decimal>("СуммаСотрудника"))
@@ -1263,22 +1262,26 @@ namespace Kesco.App.Web.TarifMobilPhone
 
             foreach (var e in results)
             {
-                RenderTableItemsLevelThree(dt, d, dText, e.КодСотрудника, currency, ndsCalc, ndsStavka, ndsIn, scale,
-                                            color, title, "tr2_" + d + "_" + e.КодСотрудника, sbNextLevel, ref sum, ref sumE);
+                var idRow = "tr2_" + d + "_" +  Guid.NewGuid();
+
+                RenderTableItemsLevelThree(dt, d, dText,  e.Пользователь, currency, ndsCalc, ndsStavka, ndsIn, scale,
+                                            color, title, idRow, sbNextLevel, ref sum, ref sumE);
 
                 
                 calcSum += sum;
                 calcSumE += sumE;
+               
 
-                sb.AppendFormat(@"<tr class=""level"" level=2 id=""tr2_{0}"" name=""{1}"" style=""display:none;"">",
-                                d + "_" + e.КодСотрудника, trId);
+                sb.AppendFormat(@"<tr class=""level"" level=2 id=""{0}"" name=""{1}"" style=""display:none;"">",
+                               idRow, trId);
                 sb.AppendFormat("<td style='width:20px'>&nbsp;</td>");
+                
                 sb.AppendFormat("<td style='width:20px'>{0}</td>",
                                 string.Format(
-                                    "<img class=\"levelImg  btn\" onclick=\"displayLevelItem('tr2_{0}');\" src='/styles/plus.gif'>",
-                                    d + "_" + e.КодСотрудника));
+                                    "<img class=\"levelImg  btn\" onclick=\"displayLevelItem('{0}');\" src='/styles/plus.gif'>",
+                                    idRow));
                 
-                sb.AppendFormat("<td colspan=3 {1}>{0}</td>", e.Сотрудник, e.КодСотрудника < 1? "style='color:gray;'":"");
+                sb.AppendFormat("<td colspan=3 >{0}</td>", e.Пользователь);
                 sb.AppendFormat("<td style='text-align:right;'>{0}</td>", Convert.Second2TimeFormat(e.Секунд));
                 sb.AppendFormat("<td style='text-align:right;{2}' {3}>{0}{1}</td>", sum.ToString("N2"), currency, color,
                                 title);
@@ -1303,7 +1306,7 @@ namespace Kesco.App.Web.TarifMobilPhone
         /// <param name="dt">Источник данны</param>
         /// <param name="d">КодДоговора</param>
         /// <param name="dText">Название договора</param>
-        /// <param name="p">КодСотрудника</param>
+        /// <param name="pl">Сотрудник</param>
         /// <param name="currency">Валюта</param>
         /// <param name="ndsAllSumm">Насчитывать НДС на всю сумму</param>
         /// <param name="ndsStavka">Ставка НДС в формате 0.18</param>
@@ -1313,12 +1316,12 @@ namespace Kesco.App.Web.TarifMobilPhone
         /// <param name="title">Всплывающее описание цвета</param>
         /// <param name="trId">Идентификатор ряда в таблице</param>
         /// <param name="sb">HTML-контент</param>
-        private void RenderTableItemsLevelThree(DataTable dt, int d, string dText, int p, string currency,
+        private void RenderTableItemsLevelThree(DataTable dt, int d, string dText, string pl, string currency,
                                                  СalculationNDS ndsCalc, decimal? ndsStavka, int? ndsIn, int? scale,
                                                  string color, string title, string trId, StringBuilder sb, ref decimal calcSum, ref decimal calcSumE)
         {
             var results = from r in dt.AsEnumerable()
-                          where r.Field<int>("КодДоговора") == d && r.Field<int>("КодСотрудника") == p
+                          where r.Field<int>("КодДоговора") == d && (r.Field<string>("Пользователь") == pl)
                           group r by
                               new
                                   {
@@ -1340,7 +1343,6 @@ namespace Kesco.App.Web.TarifMobilPhone
             string pMonth = pOpenMonth.Equals("1") ? "0" : cbMonth.Value;
             string pDogovor = d.ToString();
             string pDogovorT = HttpUtility.HtmlEncode(dText);
-            string pUser = p.ToString();
             string pPhone = "";
 
             decimal sum = 0M;
@@ -1359,9 +1361,9 @@ namespace Kesco.App.Web.TarifMobilPhone
                 sb.AppendFormat(@"<tr class=""level level3"" level=3  name=""{0}"" style=""display:none; "">", trId);
                 sb.AppendFormat("<td style='width:20px'>&nbsp;</td>");
                 sb.AppendFormat("<td style='width:20px'>&nbsp;</td>");
-                sb.AppendFormat("<td style='width:20px; text-align:right;'>{0}</td>", ph.Подчинённый.Equals(1) && p > 0
+                sb.AppendFormat("<td style='width:20px; text-align:right;'>{0}</td>", ph.Подчинённый.Equals(1) //&& p > 0
                                                                                           ? string.Format(
-                                                                                              "<img class=\"btn\" src='/styles/detail.gif' border='0' onclick=\"openDetailItem('{0}','{1}','{2}','{3}','{4}','{5}','{6}', '0', '{7}','{8}', '{9}', '{10}', '{11}', '{12}');\" title='{13}' />"
+                                                                                              "<img class=\"btn\" src='/styles/detail.gif' border='0' onclick=\"openDetailItem('{0}','{1}','{2}','{3}','{4}','{5}','{6}', '0', '{7}','{8}', '{9}', '{10}', '{11}', '{12}','{14}');\" title='{13}' />"
                                                                                               , pOpenMonth
                                                                                               , pYear
                                                                                               , pMonth
@@ -1372,7 +1374,7 @@ namespace Kesco.App.Web.TarifMobilPhone
                                                                                                   (pDogovorT)
                                                                                               , HttpUtility.
                                                                                                   JavaScriptStringEncode
-                                                                                                  (pUser)
+                                                                                                  ("")
                                                                                               , HttpUtility.
                                                                                                   JavaScriptStringEncode
                                                                                                   (pPhone)
@@ -1399,11 +1401,14 @@ namespace Kesco.App.Web.TarifMobilPhone
                                                                                                   (title)
                                                                                               , HttpUtility.
                                                                                                   JavaScriptStringEncode
-                                                                                                  (TM_RptDetail))
+                                                                                                  (TM_RptDetail)
+                                                                                              , HttpUtility.
+                                                                                                  JavaScriptStringEncode
+                                                                                                  (pl))
                                                                                           : "&nbsp;");
                 sb.AppendFormat(@"<td colspan=2><span {1}>{0}</span></td>", ph.Абонент,
-                    ph.Подчинённый.Equals(1) && p > 0
-                        ? string.Format(@"data=""{0}"" name=""phone""", p + "_" + ph.Абонент)
+                    ph.Подчинённый.Equals(1) 
+                        ? string.Format(@"data=""{0}"" name=""phone""", ph.Абонент)
                         : "");
                 sb.AppendFormat("<td style='text-align:right;'>{0}</td>", Convert.Second2TimeFormat(ph.Секунд));
                 sb.AppendFormat("<td style='text-align:right;{2}' {3}>{0}{1}</td>", sum.ToString("N2"), currency, color,
@@ -1677,15 +1682,13 @@ namespace Kesco.App.Web.TarifMobilPhone
                           group r by
                               new
                               {
-                                  КодСотрудника = r.Field<int>("КодСотрудника"),
-                                  Сотрудник = r.Field<string>("Сотрудник")
+                                  Пользователь = r.Field<string>("Пользователь")
                               }
                               into groupEmployee
-                              orderby groupEmployee.Key.Сотрудник
+                              orderby groupEmployee.Key.Пользователь
                               select new
                               {
-                                  groupEmployee.Key.КодСотрудника,
-                                  groupEmployee.Key.Сотрудник,
+                                  groupEmployee.Key.Пользователь,
                                   Секунд = groupEmployee.Sum(r => r.Field<int>("Секунд")),
                                   Сумма = groupEmployee.Sum(r => r.Field<decimal>("Сумма")),
                                   СуммаСотрудника = groupEmployee.Sum(r => r.Field<decimal>("СуммаСотрудника"))
@@ -1698,7 +1701,7 @@ namespace Kesco.App.Web.TarifMobilPhone
 
             foreach (var u in results)
             {
-                ItemsAllMonthsLevelFour(dt, d, m, u.КодСотрудника, calcNds, ndsStavka, ref sum, ref sumE);
+                ItemsAllMonthsLevelFour(dt, d, m, u.Пользователь, calcNds, ndsStavka, ref sum, ref sumE);
                 
                 color = "background:{0};";
                 title = "title='{0}'";
@@ -1725,7 +1728,7 @@ namespace Kesco.App.Web.TarifMobilPhone
                 sb.AppendFormat("<td style='width:20px'>&nbsp;</td>");
                 sb.AppendFormat("<td style='width:20px'>&nbsp;</td>");
                 sb.AppendFormat("<td style='width:20px; text-align:right;'>{0}</td>", "&nbsp;");
-                sb.AppendFormat("<td colspan=2 {1}>{0}</td>", u.Сотрудник, u.КодСотрудника < 1 ? "style='color:gray;'" : "");
+                sb.AppendFormat("<td colspan=2>{0}</td>", u.Пользователь);
                 sb.AppendFormat("<td style='text-align:right;'>{0}</td>", Convert.Second2TimeFormat(u.Секунд));
                 sb.AppendFormat("<td style='text-align:right;{2}' {3}>{0}{1}</td>", sum.ToString("N2"), currency, color,
                                 title);
@@ -1739,11 +1742,11 @@ namespace Kesco.App.Web.TarifMobilPhone
             }
         }
 
-        private void ItemsAllMonthsLevelFour(DataTable dt, int d, int m, int p, СalculationNDS calcNDS, decimal? ndsStavka,
+        private void ItemsAllMonthsLevelFour(DataTable dt, int d, int m, string pl, СalculationNDS calcNDS, decimal? ndsStavka,
             ref decimal calcSum, ref decimal calcSumE)
         {
             var results = from r in dt.AsEnumerable()
-                          where r.Field<int>("КодДоговора") == d && r.Field<int>("Месяц") == m && r.Field<int>("КодСотрудника") == p
+                          where r.Field<int>("КодДоговора") == d && r.Field<int>("Месяц") == m && r.Field<string>("Пользователь") == pl
                 group r by
                     new
                     {
@@ -1838,8 +1841,7 @@ namespace Kesco.App.Web.TarifMobilPhone
             sqlParams.Add("@StartDate", startDate);
             sqlParams.Add("@EndDate", endDate);
             sqlParams.Add("@CurrentMonth", int.Parse(chOpenMonth.Value));
-            sqlParams.Add("@КодСотрудника", int.Parse(args[0]));
-            sqlParams.Add("@НомерТелефона", args[1]);
+            sqlParams.Add("@НомерТелефона", args[0]);
             
             DataTable dt = DBManager.GetData(SQL_Queries.SQL_ПолучениеИнформацииПоSIM, Config.DS_user,
                                              CommandType.Text, sqlParams);

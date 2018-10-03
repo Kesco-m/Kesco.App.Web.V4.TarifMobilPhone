@@ -11,5 +11,14 @@ namespace Kesco.App.Web.TarifMobilPhone {
     
     
     public partial class Details {
+        
+        /// <summary>
+        /// gridData элемент управления.
+        /// </summary>
+        /// <remarks>
+        /// Автоматически создаваемое поле.
+        /// Для изменения переместите объявление поля из файла конструктора в файл кода программной части.
+        /// </remarks>
+        protected global::Kesco.Lib.Web.Controls.V4.Grid.Grid gridData;
     }
 }

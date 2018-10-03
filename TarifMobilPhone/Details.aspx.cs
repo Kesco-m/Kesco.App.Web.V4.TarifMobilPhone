@@ -8,6 +8,7 @@ using System.Linq;
 using System.Resources;
 using System.Text;
 using System.Web;
+using System.Web.UI;
 using System.Web.UI.WebControls;
 using Kesco.Lib.BaseExtention;
 using Kesco.Lib.BaseExtention.Enums.Controls;
@@ -16,78 +17,28 @@ using Kesco.Lib.Entities.Corporate;
 using Kesco.Lib.Localization;
 using Kesco.Lib.Web;
 using Kesco.Lib.Web.Controls.V4;
-using Kesco.Lib.Web.Controls.V4.Common;
 using Kesco.Lib.Web.Settings;
 using CheckBox = Kesco.Lib.Web.Controls.V4.CheckBox;
 using Convert = Kesco.Lib.ConvertExtention.Convert;
+using Page = Kesco.Lib.Web.Controls.V4.Common.Page;
 using TextBox = Kesco.Lib.Web.Controls.V4.TextBox;
 using Utils = Kesco.Lib.ConvertExtention;
 
+
 namespace Kesco.App.Web.TarifMobilPhone
 {
-    /// <summary>
-    /// Класс формы details.aspx - Детализированный отчёт по телефонным звонкам
-    /// </summary>
     public partial class Details : Page
     {
-        #region Define dynamic control
-
-        /// <summary>
-        /// Фильтр:Описание услуги тарификации
-        /// </summary>
-        private ComboBox cbDescription;
-
-        /// <summary>
-        /// Фильтр:Протарифицированная услуга
-        /// </summary>
-        private ComboBox cbService;
-
-        /// <summary>
-        /// Фильтр:Тип вызова
-        /// </summary>
-        private ComboBox cbType;
-
-        /// <summary>
-        /// Фильтр:Роуминг
-        /// </summary>
-        private ComboBox cbRouming;
-
-        /// <summary>
-        /// Группировка по направлению тарификации
-        /// </summary>
-        private CheckBox chDescription;
-
-        /// <summary>
-        /// Группировка по номеру телефона
-        /// </summary>
-        private CheckBox chPhone;
-
-        /// <summary>
-        /// Группировка по услуге
-        /// </summary>
-        private CheckBox chService;
-
-        /// <summary>
-        /// Группировка по типу вызова
-        /// </summary>
-        private CheckBox chType;
-
-        /// <summary>
-        /// Группировка по роумингу
-        /// </summary>
-        private CheckBox chRouming;
-        
-        /// <summary>
-        /// Фильтр:Телефонный номер
-        /// </summary>
-        private TextBox txtPhone;
-
-        #endregion
+        protected string PrintResponse = "";
 
         /// <summary>
         /// Менеджер ресурсов для доступа к библиотеке ресурсов Localization.dll
         /// </summary>
         public ResourceManager Resx = Resources.Resx;
+        /// <summary>
+        /// Словарь с параметрами строки запроса
+        /// </summary>
+        public Dictionary<string, string> _qsParams = new Dictionary<string, string>();
 
         #region Protected Var
 
@@ -206,7 +157,7 @@ namespace Kesco.App.Web.TarifMobilPhone
         /// Строка для передачи на клиента в статус окна соответствующего значения из ресурсного файла
         /// </summary>
         protected string Title_Help = "";
-        
+
 
         /// <summary>
         /// Строка для передачи на клиента в легенду с описанием цветов соответствующего значения из ресурсного файла
@@ -251,28 +202,6 @@ namespace Kesco.App.Web.TarifMobilPhone
 
         #endregion
 
-        #region Private Var
-       
-        /// <summary>
-        /// Словарь с параметрами строки запроса
-        /// </summary>
-        private readonly Dictionary<string, string> _qsParams = new Dictionary<string, string>();
-
-        /// <summary>
-        /// Словарь с типизированными колонками
-        /// </summary>
-        private Dictionary<string, Type> _columnList;
-
-        /// <summary>
-        /// Используется для работы со списком данных
-        /// </summary>
-        private DataView _dvData;
-
-        /// <summary>
-        /// Словарь колонками, участвующими в группировке
-        /// </summary>
-        private Dictionary<string, bool> _groupByList;
-
 
         /// <summary>
         /// Параметр для приведения переданного значения из строки запроса - НДС на общую сумму
@@ -294,17 +223,7 @@ namespace Kesco.App.Web.TarifMobilPhone
         /// </summary>
         private int _scale;
 
-        /// <summary>
-        /// Очередь сортировки
-        /// </summary>
-        private SpecialQueue<string> _sqSort;
-
-        /// <summary>
-        /// Словарь с колонками сумм
-        /// </summary>
-        private Dictionary<string, decimal> _sumList;
-
-        #endregion
+        private bool isPrintPage = false;
 
         /// <summary>
         /// Константа цвета фона, в зависимости от условий договора
@@ -319,86 +238,6 @@ namespace Kesco.App.Web.TarifMobilPhone
         /// </summary>
         private readonly string _colorOrange = "darkorange";
 
-        #region Override
-
-        /// <summary>
-        /// Обработчик события загрузки страницы
-        /// </summary>
-        /// <param name="sender">Страница</param>
-        /// <param name="e">Параметры</param>
-        protected void Page_Load(object sender, EventArgs e)
-        {
-            if (!V4IsPostBack)
-            {
-                FillColumnList();
-                FillGroupByList();
-                FillSumList();
-
-
-                // SetDefaultPagerSettings();
-
-                GetQSParams();
-
-                _ndsIn = int.Parse(_qsParams["NDSIn"]);
-                _ndsAllSumm = int.Parse(_qsParams["NDSAllSumm"]);
-                _ndsStavka = Convert.Str2Decimal(_qsParams["NDSStavka"]);
-                _scale = int.Parse(_qsParams["Scale"]);
-
-                ResxResourceSet();
-
-                _dvData = GetData(null, "");
-                _sqSort = new SpecialQueue<string>();
-
-                RenderTitle();
-                RenderTable(_dvData);
-
-                HelpUrl = "hlp/help.htm?page=hlpDetails";
-                // Pager.CurrentPageChanged += new EventHandler(Pager_CurrentPageChanged);
-                // Pager.RowsPerPageChanged += new EventHandler(Pager_RowsPerPageChanged);
-            }
-        }
-
-        /// <summary>
-        /// Обработчик команд V4, которые посылаются с клиента на сервер:
-        /// <list type="bullet">
-        /// <item>
-        /// <description>Sort - асинхронная команда, сортировки по указанной колонке</description>
-        /// </item>
-        /// <item>
-        /// <description>checkbox - асинхронная команда, изменения значения в контролах типа checkbox</description>
-        /// </item>
-        /// <item>
-        /// <description>combobox - асинхронная команда, изменения значения в контролах типа combobox</description>
-        /// </item>
-        /// <item>
-        /// <description>textbox - асинхронная команда, изменения значения в контролах типа textbox</description>
-        /// </item>
-        /// </list>
-        /// </summary>
-        /// <param name="cmd">Название команды</param>
-        /// <param name="param">Коллекция параметров</param>
-        protected override void ProcessCommand(string cmd, NameValueCollection param)
-        {
-            switch (cmd)
-            {
-                case "Sort":
-                    SortDataByColumn(param["Column"]);
-                    RestoreCursor();
-                    break;
-                case "checkbox":
-                    CheckBoxChanged(param["Column"], param["Value"]);
-                    break;
-                case "combobox":
-                case "textbox":
-                    RefreshTableBody();
-                    RestoreCursor();
-                    break;
-                default:
-                    base.ProcessCommand(cmd, param);
-                    break;
-            }
-        }
-        
         /// <summary>
         /// Получение значений строк из ресурсных файлов
         /// </summary>
@@ -444,58 +283,50 @@ namespace Kesco.App.Web.TarifMobilPhone
 
         protected override string HelpUrl
         {
-            get; set;
+            get;
+            set;
         }
 
-        #endregion
-
-        #region Fill Dictionary
-
-        /// <summary>
-        /// Процедура заполнения списка колонок
-        /// </summary>
-        private void FillColumnList()
+        protected void Page_Load(object sender, EventArgs e)
         {
-            _columnList = new Dictionary<string, Type>();
-            _columnList.Add("НачалоРазговора", typeof (string));
-            _columnList.Add("Роуминг", typeof(string));
-            _columnList.Add("Телефон", typeof (string));
-            _columnList.Add("Тип", typeof (string));
-            _columnList.Add("Услуга", typeof (string));
-            _columnList.Add("Описание", typeof(string));
-            _columnList.Add("Секунд", typeof (decimal));
-            _columnList.Add("Килобайт", typeof (decimal));
-            _columnList.Add("СуммаСотрудника", typeof (decimal));
-            _columnList.Add("Сумма", typeof (decimal));
-        }
+            if (!V4IsPostBack)
+            {
+                ResxResourceSet();
 
-        /// <summary>
-        /// Процедура заполнения списка колонок, участвующих в группировке
-        /// </summary>
-        private void FillGroupByList()
-        {
-            _groupByList = new Dictionary<string, bool>();
-            _groupByList.Add("Телефон", false);
-            _groupByList.Add("Тип", false);
-            _groupByList.Add("Услуга", false);
-            _groupByList.Add("Описание", false);
+                if (Request.QueryString["view"] == "print")
+                {
+                    isPrintPage = true;
+                    Print();
+                    ShowMessage("Пока не сделано!","Сообщение",MessageStatus.Information);
+                    return;
+                }
+                
+                GetQSParams();
+
+                SetLocalVarFromQS();
+
+                RenderTitle();
+                FillDataGrid();
+
+                HelpUrl = "hlp/help.htm?page=hlpDetails";
+            }
         }
 
         /// <summary>
-        /// Процедура заполнения списка колонок, участвующих в суммировании
+        /// Инициализирует объект <see cref="T:System.Web.UI.HtmlTextWriter"/> и вызывает дочерние элементы управления страницы <see cref="T:System.Web.UI.Page"/> для отображения.
         /// </summary>
-        private void FillSumList()
+        /// <param name="w"><see cref="T:System.Web.UI.HtmlTextWriter"/>, получающий содержимое страницы.</param>
+        protected override void Render(HtmlTextWriter w)
         {
-            _sumList = new Dictionary<string, decimal>();
-            _sumList.Add("Секунд", 0);
-            _sumList.Add("Килобайт", 0);
-            _sumList.Add("СуммаСотрудника", 0);
-            _sumList.Add("Сумма", 0);
+            if (!String.IsNullOrEmpty(PrintResponse))
+            {
+                w.Write(PrintResponse);
+                return;
+            }
+
+            base.Render(w);
         }
 
-        #endregion
-
-        #region Load Data
 
         /// <summary>
         /// Функция, формирующая словь с параметрами в зависимости от установленнного фильтра
@@ -505,21 +336,72 @@ namespace Kesco.App.Web.TarifMobilPhone
         {
             var sqlParams = new Dictionary<string, object>();
 
-            sqlParams.Add("@OpenMonth", new object[] {_qsParams["OpenMonth"], DBManager.ParameterTypes.Int32});
-            sqlParams.Add("@Год", new object[] {_qsParams["Year"], DBManager.ParameterTypes.Int32});
-            sqlParams.Add("@Месяц", new object[] {_qsParams["Month"], DBManager.ParameterTypes.Int32});
+            sqlParams.Add("@OpenMonth", new object[] { _qsParams["OpenMonth"], DBManager.ParameterTypes.Int32 });
+            sqlParams.Add("@Год", new object[] { _qsParams["Year"], DBManager.ParameterTypes.Int32 });
+            sqlParams.Add("@Месяц", new object[] { _qsParams["Month"], DBManager.ParameterTypes.Int32 });
 
-            sqlParams.Add("@КодДоговора", new object[] {_qsParams["Dogovor"], DBManager.ParameterTypes.Int32});
+            sqlParams.Add("@КодДоговора", new object[] { _qsParams["Dogovor"], DBManager.ParameterTypes.Int32 });
 
             if (_qsParams["bln"].Equals("0"))
-                sqlParams.Add("@Договор", new object[] {"", DBManager.ParameterTypes.String});
+                sqlParams.Add("@Договор", new object[] { "", DBManager.ParameterTypes.String });
             else
-                sqlParams.Add("@Договор", new object[] {_qsParams["DogovorT"], DBManager.ParameterTypes.String});
+                sqlParams.Add("@Договор", new object[] { _qsParams["DogovorT"], DBManager.ParameterTypes.String });
 
-            sqlParams.Add("@КодСотрудника", new object[] {_qsParams["User"], DBManager.ParameterTypes.Int32});
-            sqlParams.Add("@Абонент", new object[] {_qsParams["Phone"], DBManager.ParameterTypes.String});
+            sqlParams.Add("@Ключ", new object[] { _qsParams["UserT"], DBManager.ParameterTypes.String });
+            sqlParams.Add("@Абонент", new object[] { _qsParams["Phone"] == "- абонент неизвестен -" ? "" : _qsParams["Phone"], DBManager.ParameterTypes.String });
 
             return sqlParams;
+        }
+
+        /// <summary>
+        /// Метод заполнения таблицы данными
+        /// </summary>
+        private void FillDataGrid()
+        {
+            // для последующей отрисовки времени выполнения
+            var x = DateTime.Now.ToLongTimeString();
+
+            Dictionary<string, object> sqlParams = GetSQLParams();
+            gridData.SetDataSource(DBManager.GetData(SQL_Queries.SQL_ТарификацияСотовых_ДляКонтрола,
+                Config.DS_accounting_phone,
+                CommandType.Text,
+                sqlParams));
+
+            var x0 = DateTime.Now.ToLongTimeString();
+
+            // Установки видимости колонки
+            gridData.Settings.SetColumnDisplayVisible("Абонент", false);
+            // Установка алиасов
+            gridData.Settings.SetColumnHeaderAlias("НачалоРазговора", "Дата и время");
+            gridData.Settings.SetColumnHeaderAlias("Описание", "Описание услуги");
+            gridData.Settings.SetColumnHeaderAlias("Секунд", "Длительность");
+            gridData.Settings.SetColumnHeaderAlias("СуммаСотрудника", "Сумма, оплачиваемая сотрудниками");
+            // Установка формата данных
+            gridData.Settings.SetColumnFormat("Сумма", "N2");
+            gridData.Settings.SetColumnFormat("СуммаСотрудника", "N2");
+            gridData.Settings.SetColumnFormat("НачалоРазговора", "dd.MM.yy HH:mm:ss");
+            gridData.Settings.SetColumnFormat("Килобайт", "N");
+            // Преобразует секунды в строку формата HH:MM:SS
+            gridData.Settings.SetColumnIsTimeSecond("Секунд");
+            // Значения итоговой строки
+            gridData.Settings.SetColumnSumValuesText("Описание", "Итого");
+            gridData.Settings.SetColumnIsSumValues("Секунд");
+            gridData.Settings.SetColumnIsSumValues("Килобайт");
+            gridData.Settings.SetColumnIsSumValues("Сумма");
+            gridData.Settings.SetColumnIsSumValues("СуммаСотрудника");
+
+            gridData.Settings.SetColumnBackGroundColor("Сумма", _qsParams["Color"]);
+            gridData.Settings.SetColumnBackGroundColor("СуммаСотрудника", _qsParams["Color"]);
+            // фон колонок
+            var tdTitle = GetTitleByColor();
+            gridData.Settings.SetColumnTitle("Сумма", tdTitle);
+            gridData.Settings.SetColumnTitle("СуммаСотрудника", tdTitle);
+
+            gridData.RefreshGridData();
+
+            var x1 = DateTime.Now.ToLongTimeString();
+            if (Request.QueryString["showTime"]!=null) 
+                JS.Write("$(\"#TimeSpan\").html(\"Начало: {0} -> Получили данные: {1} -> Отрисовка: {2}\");", x, x0, x1);
         }
 
         /// <summary>
@@ -534,6 +416,7 @@ namespace Kesco.App.Web.TarifMobilPhone
             _qsParams.Add("bln", Request.QueryString["bln"]);
             _qsParams.Add("DogovorT", Request.QueryString["DogovorT"]);
             _qsParams.Add("User", Request.QueryString["User"]);
+            _qsParams.Add("UserT", Request.QueryString["UserT"]);
             _qsParams.Add("Phone", Request.QueryString["Phone"]);
 
             _qsParams.Add("NDSAllSumm", Request.QueryString["NDSAllSumm"]);
@@ -545,63 +428,22 @@ namespace Kesco.App.Web.TarifMobilPhone
             _qsParams.Add("Title", Request.QueryString["Title"]);
         }
 
-        /// <summary>
-        /// Процедура получения данных
-        /// </summary>
-        /// <param name="localParams">Параметры фильтрации, установленные на форме</param>
-        /// <param name="sort">Порядок сортировки</param>
-        /// <returns>Источник данных</returns>
-        private DataView GetData(StringCollection localParams, string sort)
+        private void SetLocalVarFromQS()
         {
-            //string _pageNum = Pager.CurrentPageNumber.ToString();
-            // string _itemsPerPage = Pager.RowsPerPage.ToString();
-            // string _pageCount = Pager.MaxPageNumber.ToString();
-            string _pageNum = "1";
-            string _itemsPerPage = "100000";
-            string _pageCount = "1"; //"Pager.MaxPageNumber.ToString()";
-            string _sRez = "";
-
-            Dictionary<string, object> sqlParams = GetSQLParams();
-            DataTable dt = DBManager.GetData(SQL_Queries.SQL_ТарификацияСотовых,
-                                             Config.DS_accounting_phone,
-                                             CommandType.Text,
-                                             sqlParams,
-                                             localParams,
-                                             sort,
-                                             "НачалоРазговора DESC",
-                                             _columnList,
-                                             _groupByList,
-                                             _sumList,
-                                             ref _pageNum,
-                                             ref _itemsPerPage,
-                                             ref _pageCount,
-                                             out _sRez
-                );
-
-            //Pager.CurrentPageNumber = int.Parse(_pageNum);
-            //Pager.MaxPageNumber = int.Parse(_pageCount);
-            //Pager.RowsPerPage = int.Parse(_itemsPerPage);
-
-            //if (!(int.Parse(_sRez) <= int.Parse(_itemsPerPage)))
-            //    Pager.SetDisabled(false);
-
-            JS.Write("window.status = '{0}';", HttpUtility.JavaScriptStringEncode(string.Format(LTotalFound, _sRez)));
-
-            var dv = new DataView(dt);
-            return dv;
+            _ndsIn = int.Parse(_qsParams["NDSIn"]);
+            _ndsAllSumm = int.Parse(_qsParams["NDSAllSumm"]);
+            _ndsStavka = Convert.Str2Decimal(_qsParams["NDSStavka"]);
+            _scale = int.Parse(_qsParams["Scale"]);
         }
-
-        #endregion
-
-        #region Render
 
         /// <summary>
         /// Процедура вывода статического заголовка таблицы
         /// </summary>
-        private void RenderTitle()
+        private StringWriter RenderTitle()
         {
             var w = new StringWriter();
             string _qsUser = _qsParams["User"];
+            string _qsUserT = _qsParams["UserT"];
             string _qsDogovor = _qsParams["Dogovor"];
             string _qsDogovorT = _qsParams["DogovorT"];
             string _qsPhone = _qsParams["Phone"];
@@ -620,12 +462,26 @@ namespace Kesco.App.Web.TarifMobilPhone
                 if (_qsUser.Length > 0)
                 {
                     var user = new Employee(_qsUser);
+                    if (!user.Unavailable)
+                    {
+                        w.Write("{0} - ", HttpUtility.HtmlEncode(TM_FEmployee));
 
-                    w.Write("{0} - ", HttpUtility.HtmlEncode(TM_FEmployee));
-                    string url = Config.user_form + "?id=" + user.Id;
-                    RenderLinkEmployee(w, "userLink" + user.Id, user, NtfStatus.Empty);
+                        if (isPrintPage)
+                            w.Write(_qsUserT);
+                        else
+                        {
+                            string url = Config.user_form + "?id=" + user.Id;
+                            RenderLinkEmployee(w, "userLink" + user.Id, user.Id, _qsUserT, NtfStatus.Empty);
+                        }
+                    }
+                    else
+                    {
+                        w.Write(_qsUserT); 
+                    }
                     w.Write(";");
                 }
+                else 
+                    w.Write(_qsUserT);
 
                 if (_qsPhone.Length > 0)
                 {
@@ -664,299 +520,27 @@ namespace Kesco.App.Web.TarifMobilPhone
                 w.Write(_space);
                 w.Write("{0} - {1}{2}", HttpUtility.HtmlEncode(TMD_Head3), _qsMonthName, _qsYearName);
             }
+
+
+            if (isPrintPage) return w;
+
+            w.Write(
+             "<img src=\"/styles/print.gif\" border=\"0\" title=\"Печать\" style=\"cursor:pointer; margin-right:10px; margin-left:30px;\" onclick=\"PrintData();\">");
+
             w.Write(
                 @"&nbsp;<a style=""margin-left:100px;"" href=""javascript:void(0);"" onclick=""v4_openHelp('{1}');"" class=""btn""><img src=""/styles/Help.gif"" border=""0"" title=""{0}"" ></a>", Title_Help, IDPage);
+
+
             JS.Write("var objT = document.getElementById('divTitle'); if (objT) objT.innerHTML='{0}';",
                      HttpUtility.JavaScriptStringEncode(w.ToString()));
-        }
 
-        /// <summary>
-        /// Процедура вывода данных
-        /// </summary>
-        /// <param name="dv">Источник данных</param>
-        private void RenderTable(DataView dv)
-        {
-            var w = new StringWriter();
-
-
-            w.Write(
-                "<table id='tblMain' style='empty-cells: show; BORDER-COLLAPSE:collapse;margin-right:15px' boder='1'>");
-
-            w.Write("<thead>");
-            RenderTableHeader(w, dv);
-            w.Write("</thead>");
-
-            decimal sum = 0M;
-            decimal sumE = 0M;
-
-            w.Write("<tbody id='tblBody' >");
-            RenderTableBody(w, dv, ref sum, ref sumE);
-            w.Write("</tbody>");
-
-            w.Write("<tfoot id='tblFoot'>");
-            RenderTableFooter(w, dv, sum, sumE);
-            w.Write("</tfoot>");
-
-            w.Write("</table>");
-
-            JS.Write("var objM = document.getElementById('divMain'); if (objM) objM.innerHTML='{0}';",
-                     HttpUtility.JavaScriptStringEncode(w.ToString()));
-        }
-
-        /// <summary>
-        /// Процедура вывода заголовка таблицы с контролами фильтрации и группировки
-        /// </summary>
-        /// <param name="w">Поток вывода</param>
-        /// <param name="dv">Источник данных</param>
-        private void RenderTableHeader(StringWriter w, DataView dv)
-        {
-            #region Названия колонок
-
-            w.Write("<tr class='gridHeader'>");
-
-            //-------------------------------------------------------------------------------------
-            w.Write(@"<td>");
-            w.Write(RenderSortableColumnLink("НачалоРазговора", TMD_TblColumn1));
-            w.Write("</td>");
-
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            w.Write(@"<td noWrap valign='middle'>");
-            chRouming = CreateCheckBox("chRouming", RenderSortableColumnLink("Роуминг", "Роуминг"),
-                                       Event_chRouming_Changed);
-            chRouming.RenderControl(w);
-            w.Write("</td>");
-
-            //-------------------------------------------------------------------------------------
-            w.Write(@"<td noWrap valign='middle'>");
-            chPhone = CreateCheckBox("chPhone", RenderSortableColumnLink("Телефон", TM_FPhone),
-                                        Event_chPhone_Changed);
-            chPhone.RenderControl(w);
-            w.Write("</td>");
-
-            //-------------------------------------------------------------------------------------
-            w.Write(@"<td valign='middle'>");
-            chType = CreateCheckBox("chType", RenderSortableColumnLink("Тип", TMD_TblColumn2),
-                                       Event_chType_Changed);
-            chType.RenderControl(w);
-            w.Write("</td>");
-            
-            //-------------------------------------------------------------------------------------
-            w.Write(@"<td valign='middle'>");
-            chService = CreateCheckBox("chService",
-                                          RenderSortableColumnLink("Услуга", TMD_TblColumn5),
-                                          Event_chService_Changed);
-            chService.RenderControl(w);
-            w.Write("</td>");
-
-
-            //-------------------------------------------------------------------------------------
-            w.Write(@"<td noWrap valign='middle'>");
-            chDescription = CreateCheckBox("chDescription",
-                                            RenderSortableColumnLink("Описание", "Описание услуги"),
-                                            Event_chDescription_Changed);
-            chDescription.RenderControl(w);
-            w.Write("</td>");
-
-
-            //-------------------------------------------------------------------------------------
-            w.Write(@"<td  valign='middle'>{0}</td>",
-                    RenderSortableColumnLink("Секунд", TMD_TblColumn6));
-            //-------------------------------------------------------------------------------------
-            w.Write(@"<td  valign='middle'>{0}</td>",
-                    RenderSortableColumnLink("Килобайт", TMD_TblColumn7));
-            //-------------------------------------------------------------------------------------
-            w.Write(@"<td  valign='middle'>{0}</td>",
-                    RenderSortableColumnLink("СуммаСотрудника",
-                                          string.Format("{0}<br>{1}", TM_TblColumn4_0,
-                                                        TM_TblColumn4_1)));
-            //-------------------------------------------------------------------------------------
-            w.Write(@"<td  valign='middle'>{0}</td>",
-                    RenderSortableColumnLink("Сумма", TMD_TblColumn9));
-
-
-            w.Write("</tr>");
-
-            #endregion
-
-            #region Контролы фильтрации
-
-            w.Write(@"<tr class='gridHeader'>");
-
-            //-------------------------------------------------------------------------------------
-         
-            w.Write(@"<td>");
-            //cbTime = CreateComboBox("cbTime", 18, 120, cbTime_Changed);
-            //cbTime.RenderControl(w);
-            w.Write("</td>");
-
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            w.Write(@"<td >");
-            cbRouming = CreateComboBox("cbRouming", 18, 50, Event_cbRouming_Changed);
-            FillComboBox(cbRouming, dv, "Роуминг");
-            cbRouming.RenderControl(w);
-            w.Write("</td>");
-
-            //-------------------------------------------------------------------------------------
-         
-            w.Write(@"<td>");
-            txtPhone = CreateTextBox("txtPhone", 16, 80, Event_txtPhone_Changed);
-            txtPhone.RenderControl(w);
-            w.Write("</td>");
-
-            //-------------------------------------------------------------------------------------
-         
-            w.Write(@"<td >");
-            cbType = CreateComboBox("cbType", 18, 50, Event_cbType_Changed);
-            FillComboBox(cbType, dv, "Тип");
-            cbType.RenderControl(w);
-            w.Write("</td>");
-            
-            
-            //-------------------------------------------------------------------------------------
-         
-            w.Write(@"<td>");
-            cbService = CreateComboBox("cbService", 18, 120, Event_cbService_Changed);
-            FillComboBox(cbService, dv, "Услуга");
-            cbService.RenderControl(w);
-            w.Write("</td>");
-
-            //-------------------------------------------------------------------------------------
-
-            w.Write(@"<td >");
-            cbDescription = CreateComboBox("cbDescription", 18, 250, Event_cbDescription_Changed);
-            FillComboBox(cbDescription, dv, "Описание");
-            cbDescription.RenderControl(w);
-            w.Write("</td>");
-
-            //-------------------------------------------------------------------------------------
-         
-            w.Write(@"<td></td>");
-            w.Write(@"<td></td>");
-            w.Write(@"<td></td>");
-            w.Write(@"<td></td>");
-            w.Write("</tr>");
-
-            #endregion
-        }
-
-        /// <summary>
-        /// Процедура вывода данных в "тело" таблицы
-        /// </summary>
-        /// <param name="w">Поток вывода</param>
-        /// <param name="dv">Источник данных</param>
-        /// <param name="sumNDS">Параметр, в который будет насчитан НДС по сумме для каждой записи</param>
-        /// <param name="sumNDSE">Параметр, в который будет насчитан НДС по сумме сутрудника для каждой записи</param>
-        private void RenderTableBody(StringWriter w, DataView dv, ref decimal calcSum, ref decimal calcSumE)
-        {
-            DateTime dTime;
-            string _dTime = "";
-
-            decimal sum = 0M;
-            decimal sumE = 0M;
-
-            string title = GetTitleByColor();
-            for (int i = 0; i < dv.Count; i++)
-            {
-                w.Write("<tr");
-                if (i%2 != 0)
-                    w.Write(" style='background:#efefef;'");
-                w.Write(">");
-                if (dv[i]["НачалоРазговора"] == null || dv[i]["НачалоРазговора"].ToString().Length == 0)
-                    _dTime = "";
-                else
-                {
-                    dTime = (DateTime) dv[i]["НачалоРазговора"];
-                    _dTime = dTime.ToString("dd.MM.yy HH:mm:ss");
-                }
-
-                w.Write("<td class='tdR' noWrap>{0}</td>", _dTime);
-                w.Write("<td class='tdC'>{0}</td>", dv[i]["Роуминг"]);
-                w.Write("<td class='tdC'>{0}</td>", dv[i]["Телефон"]);
-                w.Write("<td class='tdC'>{0}</td>", dv[i]["Тип"]);
-                w.Write("<td >{0}</td>", dv[i]["Услуга"]);
-                w.Write("<td >{0}</td>", dv[i]["Описание"]);
-                w.Write("<td class='tdR' noWrap>{0}</td>",
-                        Convert.Second2TimeFormat(int.Parse(dv[i]["Секунд"].ToString())));
-                w.Write("<td class='tdR' noWrap>{0}</td>", dv[i]["Килобайт"]);
-                w.Write("<td class='tdR' noWrap style='{0}' {1}>", _qsParams["Color"], title);
-
-
-                sum = Convert.Round((decimal) dv[i]["Сумма"], _scale);
-                sumE = Convert.Round((decimal) dv[i]["СуммаСотрудника"], _scale);
-
-                if (
-                    System.Convert.ToInt32(_qsParams["NDSAllSumm"])
-                        .Equals(System.Convert.ToInt32(TarifMobilPhone.СalculationNDS.OnCostOfEachCall)))
-                {
-                    sum = Convert.Round(sum*(1 + _ndsStavka), _scale);
-                    sumE = Convert.Round(sumE*(1 + _ndsStavka), _scale);
-                }
-
-                calcSum += sum;
-                calcSumE += sumE;
-
-                RenderNumber(w, Convert.Decimal2Str(sumE, _scale), _scale);
-                w.Write("</td>");
-                w.Write("<td class='tdR' style='{0}' {1}>", _qsParams["Color"], title);
-                RenderNumber(w, Convert.Decimal2Str(sum, _scale), _scale);
-                w.Write("</td>");
-
-                w.Write("</tr>");
-            }
-        }
-
-        private string GetTitleByColor()
-        {
-            string[] colorStyle = _qsParams["Color"].Split(':');
-            if (colorStyle.Length < 2) return "";
-            string color = colorStyle[1].Replace(";", "").Trim();
-            string title = "title='{0}'";
-
-            if (color.Equals(_colorWhite))
-                title = string.Format(title, TitleWhite);
-            else if (color.Equals(_colorGray))
-                title = string.Format(title, TitleGray);
-            else
-                title = string.Format(title, TitleOrange);
-            return title;
-        }
-
-        /// <summary>
-        /// Пороцедура вывода "подвала" таблицы с итоговыми суммами
-        /// </summary>
-        /// <param name="w">Поток вывода</param>
-        /// <param name="dv">Источник данных</param>
-        /// <param name="sumNDS">Насчитанный на каждую запись НДС на сумму</param>
-        /// <param name="sumNDSE">Насчитанный на каждую запись НДС на сумму сотрудника</param>
-        private void RenderTableFooter(StringWriter w, DataView dv, decimal sum, decimal sumE)
-        {
-            decimal sec = _sumList["Секунд"];
-            decimal kb = _sumList["Килобайт"];
-     
-            w.Write("<tr  class='gridHeader'>");
-            w.Write("<td></td>");
-            w.Write("<td></td>");
-            w.Write("<td></td>");
-            w.Write("<td></td>");
-            w.Write("<td></td>");
-            w.Write("<td align='right'>{0}:</td>", HttpUtility.HtmlEncode(TMD_TblFooter));
-            w.Write("<td class='tdR' noWrap>{0}</td>", Convert.Second2TimeFormat((int) sec));
-            w.Write("<td class='tdR' noWrap>");
-            RenderNumber(w, Convert.Decimal2Str(kb, 0), 0);
-            w.Write("</td>");
-            w.Write("<td class='tdR' noWrap>");
-            RenderNumber(w, Convert.Decimal2Str(sumE, _scale), _scale);
-            w.Write("</td>");
-            w.Write("<td class='tdR' noWrap>");
-            RenderNumber(w, Convert.Decimal2Str(sum, _scale), _scale);
-            w.Write("</td>");
-            w.Write("</tr>");
+            return w;
         }
 
         private void RenderSim(TextWriter w, string qsUser, string qsPhone, string qsYear, string qsMonth, string qsOpenMonth)
         {
             if (qsUser.Length == 0 || qsPhone.Length == 0) return;
-            
+
 
             Dictionary<string, object> sqlParams = new Dictionary<string, object>();
             DateTime startDate = DateTime.MinValue;
@@ -991,7 +575,7 @@ namespace Kesco.App.Web.TarifMobilPhone
             StringBuilder sb = new StringBuilder();
             if (dt.Rows.Count == 0)
             {
-                sb.AppendFormat("<font style='color:red;'>{0}</font>", TM_OutSimData);
+                //sb.AppendFormat("<font style='color:red;'>{0}</font>", TM_OutSimData);
             }
             else
             {
@@ -1020,382 +604,56 @@ namespace Kesco.App.Web.TarifMobilPhone
 
         }
 
-        #endregion
-
-        #region RefreshTable
-
-        /// <summary>
-        /// Процедура обновления содержимого таблицы 
-        /// </summary>
-        private void RefreshTableBody()
+        private string GetTitleByColor()
         {
-            RefreshTableBody(true, false, "");
+            string[] colorStyle = _qsParams["Color"].Split(':');
+            if (colorStyle.Length < 2) return "";
+            string color = colorStyle[1].Replace(";", "").Trim();
+            string title = "{0}";
+
+            if (color.Equals(_colorWhite))
+                title = string.Format(title, TitleWhite);
+            else if (color.Equals(_colorGray))
+                title = string.Format(title, TitleGray);
+            else
+                title = string.Format(title, TitleOrange);
+            return title;
         }
 
-        /// <summary>
-        /// Процедура обновления содержимого таблицы 
-        /// </summary>
-        /// <param name="refreshFromDB">Обновлять из базы данных</param>
-        /// <param name="toFirstPage">Переходить на первую страницу</param>
-        /// <param name="sort">Порядок сортировки</param>
-        private void RefreshTableBody(bool refreshFromDB, bool toFirstPage, string sort)
+        private void Print()
         {
-            var localParams = new StringCollection();
-            var w = new StringWriter();
-
-            //if (toFirstPage) Pager.CurrentPageNumber = 1;
-
-            if (refreshFromDB)
+            string idpage = Request.QueryString["idpage"];
+            if (String.IsNullOrEmpty(idpage))
             {
-                if (txtPhone.Value.Length > 0)
-                    localParams.Add("Телефон LIKE '" + txtPhone.Value + "%'");
-                
-                if (cbRouming.Value.Length >0)
-                    localParams.Add("Роуминг = '" + cbRouming.Value + "'");
-
-                if (cbType.Value.Length != 0)
-                    localParams.Add("Тип = '" + cbType.Value + "'");
-                
-                if (cbDescription.Value.Length != 0)
-                    localParams.Add("Описание = '" + cbDescription.Value + "'");
-
-                if (cbService.Value.Length != 0)
-                    localParams.Add("Услуга = '" + cbService.Value + "'");
-
-                try
-                {
-                    _dvData = GetData(localParams, sort);
-                }
-                catch (Exception ex)
-                {
-                    ShowMessage(System.Environment.NewLine + ex.Message, "Ошибка при получении данных");
-                    RestoreCursor();
-                    return;
-                }
-                
+                ShowMessage("Ошибка получения идентификатора страницы", "Ошибка печати", MessageStatus.Error);
+                return;
             }
-            decimal sumNDS = 0M;
-            decimal sumNDSE = 0M;
-            RenderTableBody(w, _dvData, ref sumNDS, ref sumNDSE);
-            JS.Write("set_tBody('{0}');", HttpUtility.JavaScriptStringEncode(w.ToString()));
-            RefreshTableFoot(sumNDS, sumNDSE);
-            JS.Write("$(\".btn\").css(\"cursor\", \"pointer\");");
-        }
-
-        /// <summary>
-        /// Процедура обновления "подвала" таблицы
-        /// </summary>
-        /// <param name="sumNDS">Насчитанный на каждую запись НДС на сумму</param>
-        /// <param name="sumNDSE">Насчитанный на каждую запись НДС на сумму сотрудника</param>
-        private void RefreshTableFoot(decimal sumNDS, decimal sumNDSE)
-        {
-            var w = new StringWriter();
-            RenderTableFooter(w, _dvData, sumNDS, sumNDSE);
-            JS.Write("set_tFoot('{0}');", HttpUtility.JavaScriptStringEncode(w.ToString()));
-        }
-
-        #endregion
-
-        #region Handler
-
-        #region CheckBox
-
-        /// <summary>
-        /// Процедура формирования словаря, с колонками по которым производится группировка
-        /// </summary>
-        /// <param name="column">Название колонки</param>
-        /// <param name="value">Значение</param>
-        private void CheckBoxChanged(string column, string value)
-        {
-            _groupByList[column] = value.Equals("1");
-            RefreshTableBody(true, true, _sqSort.ReverseListValues);
-        }
-
-        /// <summary>
-        /// Обработчик события изменения значения группировки: Телефон
-        /// </summary>
-        /// <param name="sender">Контрол</param>
-        /// <param name="e">Значение</param>
-        private void Event_chPhone_Changed(object sender, ProperyChangedEventArgs e)
-        {
-            JS.Write("ServerOnChange('checkbox', '{0}', '{1}');", HttpUtility.JavaScriptStringEncode("Телефон"),
-                     HttpUtility.JavaScriptStringEncode(e.NewValue));
-            RestoreCursor();
-        }
-
-        /// <summary>
-        ///  Обработчик события изменения значения группировки: Тип
-        /// </summary>
-        /// <param name="sender">Контрол</param>
-        /// <param name="e">Значение</param>
-        private void Event_chType_Changed(object sender, ProperyChangedEventArgs e)
-        {
-            JS.Write("ServerOnChange('checkbox', '{0}', '{1}');", HttpUtility.JavaScriptStringEncode("Тип"),
-                     HttpUtility.JavaScriptStringEncode(e.NewValue));
-            RestoreCursor();
-        }
-
-
-        /// <summary>
-        ///  Обработчик события изменения значения группировки: Роуминг
-        /// </summary>
-        /// <param name="sender">Контрол</param>
-        /// <param name="e">Значение</param>
-        private void Event_chRouming_Changed(object sender, ProperyChangedEventArgs e)
-        {
-            JS.Write("ServerOnChange('checkbox', '{0}', '{1}');", HttpUtility.JavaScriptStringEncode("Роуминг"),
-               HttpUtility.JavaScriptStringEncode(e.NewValue));
-            RestoreCursor();
-        }
-
-        
-        /// <summary>
-        ///  Обработчик события изменения значения группировки: Описание услуги тарификации
-        /// </summary>
-        /// <param name="sender">Контрол</param>
-        /// <param name="e">Значение</param>
-        private void Event_chDescription_Changed(object sender, ProperyChangedEventArgs e)
-        {
-            JS.Write("ServerOnChange('checkbox', '{0}', '{1}');", HttpUtility.JavaScriptStringEncode("Описание"),
-                     HttpUtility.JavaScriptStringEncode(e.NewValue));
-            RestoreCursor();
-        }
-
-        /// <summary>
-        ///  Обработчик события изменения значения группировки: Услуга
-        /// </summary>
-        /// <param name="sender">Контрол</param>
-        /// <param name="e">Значение</param>
-        private void Event_chService_Changed(object sender, ProperyChangedEventArgs e)
-        {
-            JS.Write("ServerOnChange('checkbox', '{0}', '{1}');", HttpUtility.JavaScriptStringEncode("Услуга"),
-                     HttpUtility.JavaScriptStringEncode(e.NewValue));
-            RestoreCursor();
-        }
-
-        #endregion
-
-        #region ComboBox
-
-        /// <summary>
-        ///  Обработчик события изменения значения фильтрации: Тип
-        /// </summary>
-        /// <param name="sender">Контрол</param>
-        /// <param name="e">Значение</param>
-        private void Event_cbType_Changed(object sender, ProperyChangedEventArgs e)
-        {
-            JS.Write("ServerOnChange('combobox');");
-        }
-
-        /// <summary>
-        ///  Обработчик события изменения значения фильтрации: Роуминг
-        /// </summary>
-        /// <param name="sender">Контрол</param>
-        /// <param name="e">Значение</param>
-        private void Event_cbRouming_Changed(object sender, ProperyChangedEventArgs e)
-        {
-            JS.Write("ServerOnChange('combobox');");
-        }
-        
-
-        /// <summary>
-        ///  Обработчик события изменения значения фильтрации: Описание услуги тарификации
-        /// </summary>
-        /// <param name="sender">Контрол</param>
-        /// <param name="e">Значение</param>
-        private void Event_cbDescription_Changed(object sender, ProperyChangedEventArgs e)
-        {
-            JS.Write("ServerOnChange('combobox');");
-        }
-
-        /// <summary>
-        ///  Обработчик события изменения значения фильтрации: Услуга
-        /// </summary>
-        /// <param name="sender">Контрол</param>
-        /// <param name="e">Значение</param>
-        private void Event_cbService_Changed(object sender, ProperyChangedEventArgs e)
-        {
-            JS.Write("ServerOnChange('combobox');");
-        }
-
-        #endregion
-
-        #region TextBox
-
-        /// <summary>
-        ///  Обработчик события изменения значения фильтрации: Телефон
-        /// </summary>
-        /// <param name="sender">Контрол</param>
-        /// <param name="e">Значение</param>
-        private void Event_txtPhone_Changed(object sender, ProperyChangedEventArgs e)
-        {
-            JS.Write("ServerOnChange('textbox');");
-        }
-
-        #endregion
-
-        #endregion
-
-        #region Dynamic control
-
-        /// <summary>
-        /// Динамичесоке создание контрола типа CheckBox
-        /// </summary>
-        /// <param name="id">Идентификатор</param>
-        /// <param name="text">Название</param>
-        /// <param name="hadler">Указатель на событие при изменении значения</param>
-        /// <returns>Kesco.Lib.Web.Controls.V4.CheckBox</returns>
-        private CheckBox CreateCheckBox(string id, string text, ChangedEventHandler hadler)
-        {
-            var ctrl = new CheckBox();
-            ctrl.Text = text;
-            ctrl.LabelFor = false;
-            ctrl.ID = id;
-            ctrl.HtmlID = id;
-            ctrl.V4Page = this;
-            V4Controls.Add(ctrl);
-            ctrl.V4OnInit();
-            ctrl.Changed += hadler;
-
-            return ctrl;
-        }
-
-        /// <summary>
-        /// Динамичесоке создание контрола типа TextBox
-        /// </summary>
-        /// <param name="id">Идентификатор</param>
-        /// <param name="h">Высота</param>
-        /// <param name="w">Ширина</param>
-        /// <param name="hadler">Указатель на событие при изменении значения</param>
-        /// <returns>Kesco.Lib.Web.Controls.V4.ComboBox</returns>
-        private ComboBox CreateComboBox(string id, int h, int w, ChangedEventHandler hadler)
-        {
-            var ctrl = new ComboBox();
-            ctrl.ID = id;
-            ctrl.HtmlID = id;
-            ctrl.V4Page = this;
-            ctrl.Height = new Unit(h + "px");
-            ctrl.Width = new Unit(w + "px");
-            V4Controls.Add(ctrl);
-            ctrl.V4OnInit();
-            ctrl.Changed += hadler;
-
-            return ctrl;
-        }
-
-        /// <summary>
-        /// Динамичесоке создание контрола типа ComboBox
-        /// </summary>
-        /// <param name="id">Идентификатор</param>
-        /// <param name="h">Высота</param>
-        /// <param name="w">Ширина</param>
-        /// <param name="hadler">Указатель на событие при изменении значения</param>
-        /// <returns>Kesco.Lib.Web.Controls.V4.TextBox</returns>
-        private TextBox CreateTextBox(string id, int h, int w, ChangedEventHandler hadler)
-        {
-            var ctrl = new TextBox();
-            ctrl.ID = id;
-            ctrl.HtmlID = id;
-            ctrl.V4Page = this;
-            ctrl.Height = new Unit(h + "px");
-            ctrl.Width = new Unit(w + "px");
-            V4Controls.Add(ctrl);
-            ctrl.V4OnInit();
-            ctrl.Changed += hadler;
-
-            return ctrl;
-        }
-
-        /// <summary>
-        /// Процедура заполнения контрола типа ComboBox
-        /// </summary>
-        /// <param name="cb">Контрол</param>
-        /// <param name="dv">Истичник данных</param>
-        /// <param name="f">Название поля из источника данных</param>
-        private void FillComboBox(ComboBox cb, DataView dv, string f)
-        {
-            var results = from r in dv.ToTable().AsEnumerable()
-                          group r by new {Field = r.Field<string>(f)}
-                          into groupField
-                          orderby groupField.Key.Field
-                          select new
-                                     {
-                                         groupField.Key.Field,
-                                     };
-
-            foreach (var d in results)
-                cb.Items.Add(d.Field, d.Field);
-        }
-
-        #endregion
-
-        #region Pager
-
-        //private void SetDefaultPagerSettings()
-        //{
-        //    Pager.CurrentPageNumber = 1;
-        //    Pager.MaxPageNumber = 1;
-        //    Pager.RowsPerPage = 50;
-        //}
-
-        //private void Pager_CurrentPageChanged(object sender, EventArgs e)
-        //{
-        //    RefreshTableBody();
-        //}
-
-        //private void Pager_RowsPerPageChanged(object sender, EventArgs e)
-        //{
-        //    RefreshTableBody();
-        //}
-
-        #endregion
-
-        #region Sort
-
-        /// <summary>
-        /// Процедура сортировки по указанной колонке
-        /// </summary>
-        /// <param name="column">Название колонки</param>
-        private void SortDataByColumn(string column)
-        {
-            string columnDESC = column + " DESC";
-            if (_sqSort.Count > 0)
+            var p = Application[idpage] as Page;
+            if (p == null)
             {
-                if (_sqSort.Last().Equals(column))
-                {
-                    _sqSort.Remove(column);
-                    column = columnDESC;
-                }
+                ShowMessage("Ошибка получения объекта страницы", "Ошибка печати", MessageStatus.Error);
+                return;
             }
 
-            _sqSort.Remove(column);
-            _sqSort.Remove(columnDESC);
+            _qsParams = ((Details)p)._qsParams;
+            StringWriter w = new StringWriter();
 
-            _sqSort.Enqueue(column);
+            w.Write("<html><head><title>{0}</title><style>table {{border-collapse: collapse;}} table, td, th {{border: 1px solid black;}} .tdR{{text-align:right}} .tdC{{text-align:center}}</style></head><body onload=\"window.print()\">", Resx.GetString("lPrint"));
+            w.Write("<h3>Детализированный отчёт по телефонным звонкам</h3>");
+            w.Write("<h4>Дата формирования: {0}</h4>",
+                DateTime.Now.ToShortDateString() + " " + DateTime.Now.ToShortTimeString() + " MSK");
 
+            w.Write(RenderTitle().ToString());
+            w.Write("<br/><br/>");
 
-            RefreshTableBody(true, false, _sqSort.ReverseListValues);
+            Kesco.Lib.Web.Controls.V4.Grid.Grid gridDataPrint = ((Details)p).gridData;
+            gridDataPrint.Settings.IsPrintVersion = true;
+            gridDataPrint.RenderGridData(w);
+            gridDataPrint.Settings.IsPrintVersion = false;
+
+            w.Write("</body></html>");
+            PrintResponse = w.ToString();
+
         }
-
-        /// <summary>
-        /// Формирование ссылок в заголовке таблицы для сортироки по указанным полям
-        /// </summary>
-        /// <param name="sortColumn">Название колонки, по которой будет осуществляться сортировка</param>
-        /// <param name="displayColumn">Название колонки, которое будет отображаться на экране</param>
-        /// <returns>HTML-контент</returns>
-        private string RenderSortableColumnLink(string sortColumn, string displayColumn)
-        {
-            var sb = new StringBuilder();
-
-            sb.AppendFormat(@"<u class='btn' onclick=""SortData('{0}');"">", sortColumn);
-            sb.Append(displayColumn);
-            sb.Append("</u>");
-
-            return sb.ToString();
-        }
-
-        #endregion
-
-        
     }
 }
