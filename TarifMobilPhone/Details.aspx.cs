@@ -376,11 +376,26 @@ namespace Kesco.App.Web.TarifMobilPhone
             gridData.Settings.SetColumnHeaderAlias("Описание", "Описание услуги");
             gridData.Settings.SetColumnHeaderAlias("Секунд", "Длительность");
             gridData.Settings.SetColumnHeaderAlias("СуммаСотрудника", "Сумма, оплачиваемая сотрудниками");
+
+            var dictDefaultScale = new Dictionary<string, int>
+            {
+                {"Килобайт", 0},
+                {"Сумма", 2},
+                {"СуммаСотрудника", 2}
+            };
+
+            
             // Установка формата данных
-            gridData.Settings.SetColumnFormat("Сумма", "N2");
-            gridData.Settings.SetColumnFormat("СуммаСотрудника", "N2");
+            gridData.Settings.SetColumnFormat("Сумма", "N");
+            gridData.Settings.SetColumnFormat("СуммаСотрудника", "N");
+
             gridData.Settings.SetColumnFormat("НачалоРазговора", "dd.MM.yy HH:mm:ss");
             gridData.Settings.SetColumnFormat("Килобайт", "N");
+
+            //Установка точности по-умолчанию
+            gridData.Settings.SetColumnFormatDefaultScale(dictDefaultScale);
+
+
             // Преобразует секунды в строку формата HH:MM:SS
             gridData.Settings.SetColumnIsTimeSecond("Секунд");
             // Значения итоговой строки

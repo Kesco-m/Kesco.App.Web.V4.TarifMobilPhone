@@ -54,6 +54,7 @@
   <ItemGroup>
     <Content Include="Default.aspx" />
     <Content Include="Details.aspx" />
+    <Content Include="Details_Old.aspx" />
     <Content Include="Global.asax" />
     <Content Include="hlp\Contents\Details.htm" />
     <Content Include="hlp\default.htm" />
@@ -86,6 +87,13 @@
     </Compile>
     <Compile Include="Details.aspx.designer.cs">
       <DependentUpon>Details.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Details_Old.aspx.cs">
+      <DependentUpon>Details_Old.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Details_Old.aspx.designer.cs">
+      <DependentUpon>Details_Old.aspx</DependentUpon>
     </Compile>
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
