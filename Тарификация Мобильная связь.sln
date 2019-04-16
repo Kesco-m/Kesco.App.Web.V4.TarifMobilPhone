@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kesco.Lib.BaseExtention", "Kesco.Lib.BaseExtention\Kesco.Lib.BaseExtention.csproj", "{D26C8D93-C51B-4F61-ADA8-8527A18E4C41}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kesco.Lib.Web.Comet", "Kesco.Lib.Web.Comet\Kesco.Lib.Web.Comet.csproj", "{EB32DBFE-59E0-4F6C-A718-BE9BA708C64F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kesco.Lib.Web.Comet", "Kesco.Lib.Web.Comet\Kesco.Lib.Web.Comet\Kesco.Lib.Web.Comet.csproj", "{EB32DBFE-59E0-4F6C-A718-BE9BA708C64F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kesco.Lib.Web.Controls.V4", "Kesco.Lib.Web.Controls.V4\Kesco.Lib.Web.Controls.V4.csproj", "{C24FDAB8-D076-4F0C-8932-DB8160E4C4EF}"
 EndProject
@@ -21,7 +21,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kesco.Lib.Web.DBSelect.V4",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kesco.Lib.Log", "Kesco.Lib.Log\Kesco.Lib.Log.csproj", "{FC924B22-160A-4F7F-98EB-63E420DE694E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kesco.App.Web.TarifMobilPhone", "TarifMobilPhone\Kesco.App.Web.TarifMobilPhone.csproj", "{8A0B6D4A-504D-47D1-9DAB-F7F994E57776}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TarifMobilPhone", "TarifMobilPhone\TarifMobilPhone.csproj", "{8A0B6D4A-504D-47D1-9DAB-F7F994E57776}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
