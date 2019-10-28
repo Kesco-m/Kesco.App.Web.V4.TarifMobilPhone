@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Data;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Resources;
 using System.Text;
 using System.Web;
 using Kesco.Lib.DALC;
 using Kesco.Lib.Localization;
+using Kesco.Lib.Log;
 using Kesco.Lib.Web.Controls.V4;
 using Kesco.Lib.Web.Controls.V4.Common;
 using Kesco.Lib.Web.Settings;
@@ -1928,5 +1930,29 @@ namespace Kesco.App.Web.TarifMobilPhone
         }
 
         #endregion
+
+        /// <summary>
+        ///     Подготовка данных для отрисовки заголовка страницы(панели с кнопками)
+        /// </summary>
+        /// <returns></returns>
+        protected string RenderDocumentHeader()
+        {
+            using (var w = new StringWriter())
+            {
+                try
+                {
+                    ClearMenuButtons();
+                    RenderButtons(w);
+                }
+                catch (Exception e)
+                {
+                    var dex = new DetailedException("Не удалось сформировать кнопки формы: " + e.Message, e);
+                    Logger.WriteEx(dex);
+                    throw dex;
+                }
+
+                return w.ToString();
+            }
+        }
     }
 }

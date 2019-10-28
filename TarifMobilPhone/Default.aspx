@@ -48,16 +48,13 @@
         var currentLevel = 1;
     </script>
 </head>
-<body style="margin-left: 25px; margin-top: 10px;">
+<body>
+<%= RenderDocumentHeader() %>
+
 <table style="MARGIN-TOP: 10px" id="tblMain" cellpadding="2" cellspacing="0">
     <tr>
-        <td align="left" valign="top" colspan="2">
+        <td align="left" valign="top" colspan="3">
             <h3><%= TM_Title %></h3>
-        </td>
-        <td align="right" valign="top">
-            <a href="javascript:void(0);" onclick="v4_openHelp('<%= IDPage %>');" class="btn" title="<%= Title_Help %>">
-                <img src="/styles/Help.gif" border="0">
-            </a>
         </td>
     </tr>
     <tr id="tr1" style="margin-bottom: 10">

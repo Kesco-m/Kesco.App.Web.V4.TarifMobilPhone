@@ -11,7 +11,9 @@ using Kesco.Lib.BaseExtention.Enums.Controls;
 using Kesco.Lib.DALC;
 using Kesco.Lib.Entities.Corporate;
 using Kesco.Lib.Localization;
+using Kesco.Lib.Log;
 using Kesco.Lib.Web.Settings;
+using Kesco.Lib.Web.SignalR;
 using Page = Kesco.Lib.Web.Controls.V4.Common.Page;
 using Utils = Kesco.Lib.ConvertExtention;
 
@@ -379,12 +381,7 @@ namespace Kesco.App.Web.TarifMobilPhone
 
             w.Write(
                 "<img src=\"/styles/print.gif\" border=\"0\" title=\"Печать\" style=\"cursor:pointer; margin-right:10px; margin-left:30px;\" onclick=\"PrintData();\">");
-
-            w.Write(
-                @"&nbsp;<a style=""margin-left:100px;"" href=""javascript:void(0);"" onclick=""v4_openHelp('{1}');"" class=""btn""><img src=""/styles/Help.gif"" border=""0"" title=""{0}"" ></a>",
-                Title_Help, IDPage);
-
-
+            
             JS.Write("var objT = document.getElementById('divTitle'); if (objT) objT.innerHTML='{0}';",
                 HttpUtility.JavaScriptStringEncode(w.ToString()));
 
@@ -484,7 +481,7 @@ namespace Kesco.App.Web.TarifMobilPhone
                 return;
             }
 
-            var p = Application[idpage] as Page;
+            var p = KescoHub.GetPage(idpage);
             if (p == null)
             {
                 ShowMessage("Ошибка получения объекта страницы", "Ошибка печати", MessageStatus.Error);
@@ -673,5 +670,30 @@ namespace Kesco.App.Web.TarifMobilPhone
         private string TM_Withdrawn = "";
 
         #endregion
+
+
+        /// <summary>
+        ///     Подготовка данных для отрисовки заголовка страницы(панели с кнопками)
+        /// </summary>
+        /// <returns></returns>
+        protected string RenderDocumentHeader()
+        {
+            using (var w = new StringWriter())
+            {
+                try
+                {
+                    ClearMenuButtons();
+                    RenderButtons(w);
+                }
+                catch (Exception e)
+                {
+                    var dex = new DetailedException("Не удалось сформировать кнопки формы: " + e.Message, e);
+                    Logger.WriteEx(dex);
+                    throw dex;
+                }
+
+                return w.ToString();
+            }
+        }
     }
 }

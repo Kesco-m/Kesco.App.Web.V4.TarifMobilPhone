@@ -10,6 +10,7 @@
     <script src="/styles/Kesco.V4/JS/Kesco.Grid.js" type="text/javascript"></script>
 </head>
 <body>
+<%= RenderDocumentHeader() %>
 
 <div class="v4formContainer">
     <div id="divTitle" style="MARGIN-BOTTOM: 10px; MARGIN-TOP: 10px;"></div>
